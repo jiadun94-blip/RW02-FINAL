@@ -24,14 +24,21 @@ export default function App() {
     return () => authListener.subscription.unsubscribe();
   }, []);
 
-  const handleAuthChange = (session: any) => {
-    setSession(session);
-    if (session) {
-      // Pastikan email admin ini sesuai dengan akun Bapak di Supabase
-      setRole(session.user.email === 'admin@rw02.com' ? 'admin' : 'user');
-      setFullName(session.user.user_metadata?.full_name || 'Warga');
-    }
-  };
+const handleAuthChange = (session: any) => {
+  setSession(session);
+  if (session) {
+    // Tambahkan email-email admin di dalam kurung kotak ini
+    const daftarAdmin = [
+      'hadiatpermana@gmail.com', 
+      'jiadun94@gmail.com', 
+      'neosapien.ns@gmail.com.com'
+    ]; 
+    
+    // Cek apakah email yang login ada di dalam daftar admin
+    setRole(daftarAdmin.includes(session.user.email) ? 'admin' : 'user');
+    setFullName(session.user.user_metadata?.full_name || 'Warga');
+  }
+};
 
   const fetchData = async () => {
     const { data } = await supabase.from('transaksi').select('*').order('created_at', { ascending: false });
