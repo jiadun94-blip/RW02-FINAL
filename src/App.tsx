@@ -10,7 +10,6 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   
-  // State Form & Modal
   const [showModal, setShowModal] = useState(false);
   const [showStruk, setShowStruk] = useState(false);
   const [tipe, setTipe] = useState<'masuk' | 'keluar'>('masuk');
@@ -29,7 +28,6 @@ export default function App() {
   const handleAuthChange = (session: any) => {
     setSession(session);
     if (session) {
-      // Mengambil role dari user metadata
       const userRole = session.user.user_metadata?.role || 'user';
       setRole(userRole);
       setFullName(session.user.user_metadata?.full_name || 'Hadiat');
@@ -59,14 +57,33 @@ export default function App() {
     setLoading(false);
   };
 
+  // PERBAIKAN FUNGSI CETAK
   const handleConfirmAndPrint = async () => {
     if (!amount || !desc) return alert("Isi data dulu!");
+    setLoading(true);
+    
     const { error } = await supabase.from('transaksi').insert([{ 
-      keterangan: desc, nominal: parseInt(amount), tipe, created_at: new Date(date).toISOString(), penerima 
+      keterangan: desc, 
+      nominal: parseInt(amount), 
+      tipe, 
+      created_at: new Date(date).toISOString(), 
+      penerima 
     }]);
+
     if (!error) {
-      window.print();
-      setShowStruk(false); setAmount(''); setDesc(''); setPenerima(''); fetchData();
+      // Kasih jeda sedikit agar UI rendering struk selesai sebelum print dipicu
+      setTimeout(() => {
+        window.print();
+        setLoading(false);
+        setShowStruk(false);
+        setAmount('');
+        setDesc('');
+        setPenerima('');
+        fetchData();
+      }, 500);
+    } else {
+      alert("Gagal menyimpan data");
+      setLoading(false);
     }
   };
 
@@ -74,7 +91,6 @@ export default function App() {
   const totalKeluar = list.filter(i => i.tipe === 'keluar').reduce((a, b) => a + b.nominal, 0);
   const saldoAkhir = totalMasuk - totalKeluar;
 
-  // LAYOUT LOGIN
   if (!session) return (
     <div className="min-h-screen flex items-center justify-center bg-[#4D5645] p-6">
       <div className="bg-white p-10 rounded-[2.5rem] w-full max-w-sm shadow-2xl">
@@ -84,8 +100,12 @@ export default function App() {
           {isSignUp && <input name="name" required placeholder="Nama Lengkap" className="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold" />}
           <input name="email" type="email" required placeholder="Email" className="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold" />
           <input name="password" type="password" required placeholder="Password" className="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold" />
-          <button className="w-full bg-[#4D5645] text-white py-4 rounded-2xl font-black uppercase tracking-widest">{loading ? '...' : isSignUp ? 'Daftar' : 'Masuk'}</button>
-          <p onClick={() => setIsSignUp(!isSignUp)} className="text-[10px] font-black text-slate-400 uppercase cursor-pointer underline">{isSignUp ? 'Sudah punya akun? Login' : 'Belum punya akun? Daftar'}</p>
+          <button disabled={loading} className="w-full bg-[#4D5645] text-white py-4 rounded-2xl font-black uppercase tracking-widest">
+            {loading ? 'Proses...' : isSignUp ? 'Daftar' : 'Masuk'}
+          </button>
+          <p onClick={() => setIsSignUp(!isSignUp)} className="text-[10px] font-black text-slate-400 uppercase cursor-pointer underline">
+            {isSignUp ? 'Sudah punya akun? Login' : 'Belum punya akun? Daftar'}
+          </p>
         </form>
       </div>
     </div>
@@ -93,8 +113,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#4D5645] font-sans pb-24 relative overflow-hidden">
-      {/* HEADER AREA */}
-      <div className="p-6 flex justify-between items-start relative z-10">
+      {/* HEADER */}
+      <div className="p-6 flex justify-between items-start relative z-10 no-print">
         <div className="flex items-center gap-3">
           <img src="/kas_rw1.png" alt="Logo" className="h-12" />
           <div className="text-white">
@@ -110,7 +130,7 @@ export default function App() {
       </div>
 
       {/* CARD SALDO */}
-      <div className="px-5 mt-2 relative z-10">
+      <div className="px-5 mt-2 relative z-10 no-print">
         <div className="bg-[#2C2C2C] rounded-[2.5rem] p-8 shadow-2xl border border-white/5">
           <p className="text-center text-white/50 text-xs font-bold mb-1 uppercase tracking-[0.2em]">Saldo Akhir</p>
           <h2 className="text-center text-white text-5xl font-black tracking-tighter mb-8 italic">
@@ -129,8 +149,8 @@ export default function App() {
         </div>
       </div>
 
-      {/* TABLE RIWAYAT */}
-      <div className="px-5 mt-6 relative z-10">
+      {/* TABLE */}
+      <div className="px-5 mt-6 relative z-10 no-print">
         <div className="bg-[#D9D9D9] rounded-t-[2.5rem] p-5 pb-10">
           <div className="flex justify-between items-center mb-4">
              <h3 className="font-black text-[10px] uppercase tracking-widest text-slate-500 italic">● Riwayat Transaksi</h3>
@@ -161,33 +181,31 @@ export default function App() {
         </div>
       </div>
 
-      {/* BOTTOM NAVIGATION DENGAN PROTEKSI ROLE */}
+      {/* NAV */}
       <div className="fixed bottom-0 left-0 right-0 bg-[#2C2C2C] h-20 flex justify-around items-center px-6 z-50 border-t border-white/5 no-print">
         <button onClick={() => setTab('dashboard')} className={`flex flex-col items-center gap-1 ${tab === 'dashboard' ? 'text-[#D9E253]' : 'text-white/40'}`}>
           <span className="text-xl">🏠</span>
           <span className="text-[8px] font-black uppercase">Dashboard</span>
         </button>
-
         {role === 'admin' && (
           <>
-            <button onClick={() => { setTipe('masuk'); setShowModal(true); }} className="flex flex-col items-center gap-1 text-white/40 active:text-[#D9E253]">
+            <button onClick={() => { setTipe('masuk'); setShowModal(true); }} className="flex flex-col items-center gap-1 text-white/40">
               <span className="text-xl">➕</span>
               <span className="text-[8px] font-black uppercase">Masuk</span>
             </button>
-            <button onClick={() => { setTipe('keluar'); setShowModal(true); }} className="flex flex-col items-center gap-1 text-white/40 active:text-[#D9E253]">
+            <button onClick={() => { setTipe('keluar'); setShowModal(true); }} className="flex flex-col items-center gap-1 text-white/40">
               <span className="text-xl">➖</span>
               <span className="text-[8px] font-black uppercase">Keluar</span>
             </button>
           </>
         )}
-
         <button onClick={() => setTab('report')} className={`flex flex-col items-center gap-1 ${tab === 'report' ? 'text-[#D9E253]' : 'text-white/40'}`}>
           <span className="text-xl">📊</span>
           <span className="text-[8px] font-black uppercase">Report</span>
         </button>
       </div>
 
-      {/* MODAL INPUT ADMIN */}
+      {/* MODAL INPUT */}
       {showModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6 no-print">
           <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8">
@@ -196,22 +214,22 @@ export default function App() {
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-4 bg-slate-100 rounded-2xl outline-none" />
               <input type="number" placeholder="Nominal" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full p-4 bg-slate-100 rounded-2xl text-xl outline-none" />
               <textarea placeholder="Keterangan" value={desc} onChange={(e) => setDesc(e.target.value)} className="w-full p-4 bg-slate-100 rounded-2xl text-sm outline-none resize-none" />
-              <input type="text" placeholder="Nama Penyetor/Penerima" value={penerima} onChange={(e) => setPenerima(e.target.value)} className="w-full p-4 bg-slate-100 rounded-2xl text-sm outline-none" />
+              <input type="text" placeholder="Penyetor/Penerima" value={penerima} onChange={(e) => setPenerima(e.target.value)} className="w-full p-4 bg-slate-100 rounded-2xl text-sm outline-none" />
               <div className="flex gap-2 pt-4">
                 <button onClick={() => setShowModal(false)} className="flex-1 py-4 bg-slate-100 rounded-2xl font-black uppercase text-[10px]">Batal</button>
-                <button onClick={() => { setShowModal(false); setShowStruk(true); }} className="flex-1 py-4 bg-[#4D5645] text-white rounded-2xl font-black uppercase text-[10px]">Simpan</button>
+                <button onClick={() => { setShowModal(false); setShowStruk(true); }} className="flex-1 py-4 bg-[#4D5645] text-white rounded-2xl font-black uppercase text-[10px]">Cek Struk</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* STRUK THERMAL */}
+      {/* STRUK THERMAL - PENYEBAB MASALAH PRINT FIX */}
       {showStruk && (
         <div className="fixed inset-0 bg-white z-[999] font-mono text-slate-950 flex flex-col items-start print-page overflow-y-auto">
           <div className="w-full max-w-[380px] pl-1 pr-12 pt-4 pb-8 flex flex-col">
             <div className="text-center border-b-2 border-slate-950 pb-2 mb-4">
-              <h1 className="text-2xl font-black uppercase">Bukti Kas RW 02</h1>
+              <h1 className="text-xs font-black uppercase">Bukti Kas RW 02</h1>
               <p className="text-xs font-bold uppercase tracking-tighter">Jamaras Istimewa - Jatihandap , Mandalajati</p>
             </div>
             <div className="space-y-3 text-lg font-bold">
@@ -238,9 +256,17 @@ export default function App() {
             </div>
             <div className="mt-10 text-center text-[8px] opacity-30 uppercase tracking-[0.5em]">*** Sah Digital ***</div>
           </div>
-          <div className="mt-4 flex gap-2 no-print w-full max-w-[350px] px-4 pb-10">
+          
+          {/* TOMBOL KONFIRMASI CETAK */}
+          <div className="mt-4 flex gap-2 no-print w-full max-w-[350px] px-4 pb-20">
              <button onClick={() => setShowStruk(false)} className="flex-1 bg-slate-100 py-4 rounded-xl font-black">BATAL</button>
-             <button onClick={handleConfirmAndPrint} className="flex-1 bg-[#4D5645] text-white py-4 rounded-xl font-black uppercase">CETAK</button>
+             <button 
+                onClick={handleConfirmAndPrint} 
+                disabled={loading}
+                className="flex-1 bg-[#4D5645] text-white py-4 rounded-xl font-black uppercase"
+             >
+                {loading ? 'MENYIMPAN...' : 'KONFIRMASI & CETAK'}
+             </button>
           </div>
         </div>
       )}
@@ -249,10 +275,20 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #4D5645; overflow-x: hidden; }
         @media print {
-          body * { visibility: hidden; }
-          .print-page, .print-page * { visibility: visible; }
-          .print-page { position: absolute; left: 0; top: 0; width: 100%; margin:0; padding:0; }
+          body { background-color: white !important; }
           .no-print { display: none !important; }
+          .print-page { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: 1000; 
+            visibility: visible !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .print-page * { visibility: visible !important; }
         }
       `}</style>
     </div>
