@@ -186,37 +186,76 @@ export default function App() {
         </div>
       )}
 
-      {/* STRUK A4 (TEKS TERSTRUKTUR RAPI) */}
-      {showStruk && (
-        <div className="fixed inset-0 bg-white z-[999] p-16 font-mono text-slate-950 flex flex-col items-center print-page overflow-y-auto">
-          <div className="w-full max-w-[850px] border-4 border-slate-950 p-12 min-h-[1100px] flex flex-col relative">
-            <div className="text-center border-b-8 border-double border-slate-950 pb-10 mb-12">
-              <h1 className="text-5xl font-black mb-2">BUKTI KAS RW 02</h1>
-              <p className="text-2xl font-bold tracking-[0.3em] uppercase">Jamaras Istimewa - Cilengkrang</p>
-            </div>
-            <div className="flex-grow space-y-12 text-2xl">
-              <div className="grid grid-cols-2 gap-10 border-b border-dashed border-slate-200 pb-8">
-                <div><span className="text-sm font-bold text-slate-400 block mb-2 uppercase">Tanggal Transaksi</span><p className="font-black">{new Date(date).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</p></div>
-                <div><span className="text-sm font-bold text-slate-400 block mb-2 uppercase">Kategori</span><p className={`font-black italic uppercase ${tipe === 'masuk' ? 'text-green-800' : 'text-red-800'}`}>Kas {tipe}</p></div>
-              </div>
-              <div className="border-b border-dashed border-slate-200 pb-8"><span className="text-sm font-bold text-slate-400 block mb-2 uppercase">Deskripsi Keterangan</span><p className="font-black text-4xl uppercase">{desc}</p></div>
-              <div className="border-b border-dashed border-slate-200 pb-8"><span className="text-sm font-bold text-slate-400 block mb-2 uppercase">Pihak Penerima/Penyetor</span><p className="font-black text-4xl uppercase">{penerima || "-"}</p></div>
-              <div className="mt-16 bg-slate-50 p-12 rounded-3xl flex justify-between items-center border-4 border-slate-100">
-                <span className="text-3xl font-black italic">TOTAL GRAND:</span>
-                <span className="text-7xl font-black italic tracking-tighter">Rp {parseInt(amount).toLocaleString()}</span>
-              </div>
-            </div>
-            <div className="mt-40 grid grid-cols-2 gap-40 text-center font-bold">
-              <div><p className="mb-40 uppercase">Penyetor/Penerima,</p><div className="border-t-4 border-slate-950 mx-10"></div><p className="mt-4">( {penerima || "..............."} )</p></div>
-              <div><p className="mb-40 uppercase">Bendahara RW 02,</p><div className="border-t-4 border-slate-950 mx-10"></div><p className="mt-4 italic">{fullName}</p></div>
-            </div>
-          </div>
-          <div className="mt-12 flex gap-8 no-print w-full max-w-[850px]">
-             <button onClick={() => setShowStruk(false)} className="flex-1 bg-slate-100 py-6 rounded-3xl font-black text-xl uppercase italic">Batal</button>
-             <button onClick={handleConfirmAndPrint} className="flex-1 bg-slate-950 text-white py-6 rounded-3xl font-black text-xl uppercase italic">Konfirmasi & Cetak A4</button>
+{/* STRUK A4 - VERSI HEMAT KERTAS & RAPI */}
+{showStruk && (
+  <div className="fixed inset-0 bg-white z-[999] p-8 font-mono text-slate-950 flex flex-col items-center print-page overflow-y-auto">
+    {/* CONTAINER LEBIH RINGKAS */}
+    <div className="w-full max-w-[800px] border-2 border-slate-950 p-8 min-h-[auto] flex flex-col relative">
+      
+      {/* HEADER RINGKAS */}
+      <div className="text-center border-b-4 border-double border-slate-950 pb-4 mb-6">
+        <h1 className="text-3xl font-black mb-1">BUKTI KAS RW 02</h1>
+        <p className="text-lg font-bold tracking-widest uppercase">Jamaras Istimewa - Jatihandap Mandalajati </p>
+      </div>
+
+      {/* DETAIL INFORMASI PADAT [cite: 3, 6] */}
+      <div className="space-y-4 text-xl">
+        <div className="flex justify-between border-b border-dashed border-slate-300 pb-2">
+          <span className="text-sm font-bold text-slate-500 uppercase">Tanggal</span>
+          <span className="font-bold">{new Date(date).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</span>
+        </div>
+
+        <div className="flex justify-between border-b border-dashed border-slate-300 pb-2">
+          <span className="text-sm font-bold text-slate-500 uppercase">Kategori</span>
+          <span className={`font-bold uppercase ${tipe === 'masuk' ? 'text-green-800' : 'text-red-800'}`}>Kas {tipe}</span>
+        </div>
+
+        <div className="border-b border-dashed border-slate-300 pb-2">
+          <span className="text-sm font-bold text-slate-500 uppercase block mb-1">Deskripsi Keterangan [cite: 3]</span>
+          <p className="font-bold text-2xl uppercase leading-tight">{desc}</p>
+        </div>
+
+        <div className="border-b border-dashed border-slate-300 pb-2">
+          <span className="text-sm font-bold text-slate-500 uppercase block mb-1">Penerima/Penyetor [cite: 6]</span>
+          <p className="font-bold text-2xl uppercase">{penerima || "-"}</p>
+        </div>
+      </div>
+
+      {/* TOTAL GRAND YANG LEBIH RAMPING [cite: 8, 9] */}
+      <div className="mt-6 py-4 border-y-4 border-double border-slate-950 flex justify-between items-center">
+        <span className="text-xl font-black">TOTAL GRAND [cite: 8]</span>
+        <span className="text-4xl font-black tracking-tighter">Rp {parseInt(amount).toLocaleString()} </span>
+      </div>
+
+      {/* AREA TANDA TANGAN LEBIH RAPAT  */}
+      <div className="mt-12 grid grid-cols-2 gap-20 text-center font-bold">
+        <div>
+          <p className="mb-20 uppercase text-sm">Penyetor/Penerima [cite: 10]</p>
+          <div className="border-t-2 border-slate-950 mx-4 pt-1">
+            <p className="text-lg">( {penerima || "..............."} )</p>
           </div>
         </div>
-      )}
+        <div>
+          <p className="mb-20 uppercase text-sm">Bendahara RW 02 [cite: 11]</p>
+          <div className="border-t-2 border-slate-950 mx-4 pt-1">
+            <p className="text-lg italic">{fullName}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* FOOTER KECIL */}
+      <div className="mt-10 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        *** Dokumen Sah Digital - Kas RW 02 ***
+      </div>
+    </div>
+
+    {/* TOMBOL ACTION */}
+    <div className="mt-8 flex gap-4 no-print w-full max-w-[800px]">
+       <button onClick={() => setShowStruk(false)} className="flex-1 bg-slate-100 py-4 rounded-xl font-black text-lg uppercase italic">Batal</button>
+       <button onClick={handleConfirmAndPrint} className="flex-1 bg-slate-950 text-white py-4 rounded-xl font-black text-lg uppercase italic">Konfirmasi & Cetak</button>
+    </div>
+  </div>
+)}
 
       {/* NAV BAWAH */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 h-24 flex justify-around items-center px-10 z-50 no-print">
