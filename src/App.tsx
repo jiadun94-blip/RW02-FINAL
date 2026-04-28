@@ -186,62 +186,76 @@ export default function App() {
         </div>
       )}
 
-{/* STRUK A4 - VERSI HEMAT KERTAS & RAPI */}
+{/* STRUK THERMAL - VERSI FONT BESAR & ANTI POTONG */}
 {showStruk && (
-  <div className="fixed inset-0 bg-white z-[999] p-8 font-mono text-slate-950 flex flex-col items-center print-page overflow-y-auto">
-    {/* CONTAINER LEBIH RINGKAS */}
-    <div className="w-full max-w-[800px] border-2 border-slate-950 p-8 min-h-[auto] flex flex-col relative">
+  <div className="fixed inset-0 bg-white z-[999] font-mono text-slate-950 flex flex-col items-start print-page overflow-y-auto">
+    {/* CONTAINER TANPA BORDER & PENYESUAIAN MARGIN */}
+    {/* Margin kiri dikurangi, margin kanan ditambah agar tidak terpotong di printer thermal */}
+    <div className="w-full max-w-[400px] pl-2 pr-10 pt-4 pb-8 flex flex-col relative">
       
-      {/* HEADER RINGKAS */}
-      <div className="text-center border-b-4 border-double border-slate-950 pb-4 mb-6">
-        <h1 className="text-3xl font-black mb-1">BUKTI KAS RW 02</h1>
-        <p className="text-lg font-bold tracking-widest uppercase">Jamaras Istimewa - Jatihandap Mandalajati </p>
+      {/* HEADER - FONT LEBIH BESAR */}
+      <div className="text-center border-b-2 border-slate-950 pb-2 mb-4">
+        <h1 className="text-2xl font-black mb-1">BUKTI KAS RW 02</h1> [cite: 2]
+        <p className="text-sm font-bold tracking-tight uppercase">Jamaras Istimewa - Cilengkrang</p>
       </div>
 
-      {/* DETAIL INFORMASI PADAT [cite: 3, 6] */}
-      <div className="space-y-4 text-xl">
-        <div className="flex justify-between border-b border-dashed border-slate-300 pb-2">
-          <span className="text-sm font-bold text-slate-500 uppercase">Tanggal</span>
-          <span className="font-bold">{new Date(date).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</span>
+      {/* DETAIL INFORMASI - FONT DIPERBESAR */}
+      <div className="space-y-3 text-lg font-bold">
+        <div className="flex flex-col border-b border-dashed border-slate-400 pb-1">
+          <span className="text-xs uppercase text-slate-500">Tanggal:</span>
+          <span>{new Date(date).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})}</span> [cite: 1]
         </div>
 
-        <div className="flex justify-between border-b border-dashed border-slate-300 pb-2">
-          <span className="text-sm font-bold text-slate-500 uppercase">Kategori</span>
-          <span className={`font-bold uppercase ${tipe === 'masuk' ? 'text-green-800' : 'text-red-800'}`}>Kas {tipe}</span>
+        <div className="flex flex-col border-b border-dashed border-slate-400 pb-1">
+          <span className="text-xs uppercase text-slate-500">Jenis:</span>
+          <span className="uppercase">KAS {tipe}</span>
         </div>
 
-        <div className="border-b border-dashed border-slate-300 pb-2">
-          <span className="text-sm font-bold text-slate-500 uppercase block mb-1">Deskripsi Keterangan [cite: 3]</span>
-          <p className="font-bold text-2xl uppercase leading-tight">{desc}</p>
+        <div className="flex flex-col border-b border-dashed border-slate-400 pb-1">
+          <span className="text-xs uppercase text-slate-500">Keterangan:</span> [cite: 3]
+          <p className="text-xl uppercase leading-tight">{desc}</p> [cite: 4]
         </div>
 
-        <div className="border-b border-dashed border-slate-300 pb-2">
-          <span className="text-sm font-bold text-slate-500 uppercase block mb-1">Penerima/Penyetor [cite: 6]</span>
-          <p className="font-bold text-2xl uppercase">{penerima || "-"}</p>
+        <div className="flex flex-col border-b border-dashed border-slate-400 pb-1">
+          <span className="text-xs uppercase text-slate-500">Penerima/Penyetor:</span> [cite: 6]
+          <p className="text-xl uppercase">{penerima || "-"}</p> [cite: 7]
         </div>
       </div>
 
-      {/* TOTAL GRAND YANG LEBIH RAMPING [cite: 8, 9] */}
-      <div className="mt-6 py-4 border-y-4 border-double border-slate-950 flex justify-between items-center">
-        <span className="text-xl font-black">TOTAL GRAND [cite: 8]</span>
-        <span className="text-4xl font-black tracking-tighter">Rp {parseInt(amount).toLocaleString()} </span>
+      {/* TOTAL NOMINAL - UKURAN TETAP SESUAI PERMINTAAN */}
+      <div className="mt-4 py-3 border-y-2 border-slate-950 flex justify-between items-center">
+        <span className="text-lg font-black italic">TOTAL:</span> [cite: 8]
+        <span className="text-4xl font-black tracking-tighter">Rp {parseInt(amount).toLocaleString()}</span> [cite: 9]
       </div>
 
-      {/* AREA TANDA TANGAN LEBIH RAPAT  */}
-      <div className="mt-12 grid grid-cols-2 gap-20 text-center font-bold">
+      {/* AREA TANDA TANGAN - LEBIH RAPAT */}
+      <div className="mt-8 grid grid-cols-2 gap-4 text-center text-sm font-bold">
         <div>
-          <p className="mb-20 uppercase text-sm">Penyetor/Penerima [cite: 10]</p>
-          <div className="border-t-2 border-slate-950 mx-4 pt-1">
-            <p className="text-lg">( {penerima || "..............."} )</p>
+          <p className="mb-14 uppercase">Penyetor</p> [cite: 10]
+          <div className="border-t border-slate-950 pt-1">
+            <p>( {penerima || "---"} )</p> [cite: 12]
           </div>
         </div>
         <div>
-          <p className="mb-20 uppercase text-sm">Bendahara RW 02 [cite: 11]</p>
-          <div className="border-t-2 border-slate-950 mx-4 pt-1">
-            <p className="text-lg italic">{fullName}</p>
+          <p className="mb-14 uppercase">Bendahara</p> [cite: 11]
+          <div className="border-t border-slate-950 pt-1">
+            <p>{fullName}</p> [cite: 13]
           </div>
         </div>
       </div>
+
+      <div className="mt-6 text-center text-[10px] font-bold uppercase">
+        *** Dokumen Digital RW 02 ***
+      </div>
+    </div>
+
+    {/* TOMBOL ACTION (TIDAK IKUT TERPRINT) */}
+    <div className="mt-4 flex gap-2 no-print w-full max-w-[350px] px-4">
+       <button onClick={() => setShowStruk(false)} className="flex-1 bg-slate-100 py-3 rounded-lg font-bold text-sm">BATAL</button>
+       <button onClick={handleConfirmAndPrint} className="flex-1 bg-slate-900 text-white py-3 rounded-lg font-bold text-sm">CETAK</button>
+    </div>
+  </div>
+)}
 
       {/* FOOTER KECIL */}
       <div className="mt-10 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
