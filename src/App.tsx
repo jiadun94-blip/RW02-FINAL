@@ -213,7 +213,7 @@ export default function App() {
         <div className="fixed inset-0 bg-white z-[999] p-12 font-serif text-slate-900 flex flex-col items-stretch print-page">
           <div className="text-center border-b-4 border-double border-slate-800 pb-6 mb-8">
             <h1 className="text-4xl font-black mb-1">KAS ONLINE RW 02</h1>
-            <p className="text-sm uppercase tracking-widest">Kecamatan Cilengkrang, Kabupaten Bandung, Jawa Barat</p>
+            <p className="text-sm uppercase tracking-widest">Jamaras 2 , kelurahan jatihandap kec.Mandalajati</p>
           </div>
           
           <div className="space-y-6 text-xl">
