@@ -5,11 +5,11 @@ export default function App() {
   const [session, setSession] = useState<any>(null);
   const [role, setRole] = useState<'admin' | 'user'>('user');
   const [list, setList] = useState<any[]>([]);
-  const [tab, setTab] = useState<'beranda' | 'laporan'>('beranda');
+  const [tab, setTab] = useState<'dashboard' | 'pemasukan' | 'pengeluaran' | 'report'>('dashboard');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   
+  // State Form
   const [showModal, setShowModal] = useState(false);
   const [showStruk, setShowStruk] = useState(false);
   const [tipe, setTipe] = useState<'masuk' | 'keluar'>('masuk');
@@ -19,132 +19,164 @@ export default function App() {
   const [penerima, setPenerima] = useState('');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => handleAuthChange(session));
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => handleAuthChange(session));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) {
+        setFullName(session.user.user_metadata?.full_name || 'Hadiat');
+        setRole(session.user.user_metadata?.role || 'user');
+      }
+    });
     fetchData();
-    return () => authListener.subscription.unsubscribe();
   }, []);
-
-  const handleAuthChange = (session: any) => {
-    setSession(session);
-    if (session) {
-      setRole(session.user.user_metadata?.role === 'admin' ? 'admin' : 'user');
-      setFullName(session.user.user_metadata?.full_name || 'Warga');
-    }
-  };
 
   const fetchData = async () => {
     const { data } = await supabase.from('transaksi').select('*').order('created_at', { ascending: false });
     if (data) setList(data);
   };
 
-  const handleAuthAction = async (e: any) => {
-    e.preventDefault();
-    setLoading(true);
-    const email = e.target.email.value;
-    const password = e.target.password.value;
-    if (isSignUp) {
-      const name = e.target.name.value;
-      const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name, role: 'user' } } });
-      if (error) alert(error.message); else alert("Daftar berhasil!");
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) alert("Email/Password Salah!");
-    }
-    setLoading(false);
-  };
-
   const handleConfirmAndPrint = async () => {
-    if (!amount || !desc) return alert("Isi data dulu!");
     const { error } = await supabase.from('transaksi').insert([{ 
-      keterangan: `${desc} (Oleh: ${penerima})`, 
-      nominal: parseInt(amount), tipe, created_at: new Date(date).toISOString() 
+      keterangan: desc, nominal: parseInt(amount), tipe, created_at: new Date(date).toISOString(), penerima 
     }]);
-    if (!error) {
-      window.print();
-      setShowStruk(false); setAmount(''); setDesc(''); setPenerima(''); fetchData();
-    }
+    if (!error) { window.print(); setShowStruk(false); fetchData(); }
   };
 
   const totalMasuk = list.filter(i => i.tipe === 'masuk').reduce((a, b) => a + b.nominal, 0);
   const totalKeluar = list.filter(i => i.tipe === 'keluar').reduce((a, b) => a + b.nominal, 0);
+  const saldoAkhir = totalMasuk - totalKeluar;
 
-  if (!session) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-6">
-      <div className="bg-white p-10 rounded-[2.5rem] w-full max-w-sm shadow-2xl">
-        <form onSubmit={handleAuthAction} className="space-y-6 text-center">
-          <img src="/kas_rw1.png" alt="Logo" className="h-20 mx-auto" />
-          <h2 className="font-black text-xl uppercase italic">{isSignUp ? 'Daftar' : 'Login Kas RW 02'}</h2>
-          {isSignUp && <input name="name" required placeholder="Nama Lengkap" className="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold" />}
-          <input name="email" type="email" required placeholder="Email" className="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold" />
-          <input name="password" type="password" required placeholder="Password" className="w-full p-4 bg-slate-100 rounded-2xl outline-none font-bold" />
-          <button className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest">{loading ? '...' : isSignUp ? 'Daftar' : 'Masuk'}</button>
-          <p onClick={() => setIsSignUp(!isSignUp)} className="text-[10px] font-black text-slate-400 uppercase cursor-pointer">{isSignUp ? 'Ke Login' : 'Belum punya akun? Daftar'}</p>
-        </form>
-      </div>
-    </div>
-  );
+  if (!session) return <div className="p-10 text-center font-bold">Silahkan Login di HP/PC Anda</div>;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-32">
-      <div className="p-6 bg-white flex justify-between items-center shadow-sm sticky top-0 z-40 no-print">
-        <div className="flex items-center gap-3">
-          <img src="/kas_rw1.png" alt="Logo" className="h-10 w-10" />
-          <p className="text-lg font-black text-slate-800">{fullName}</p>
-        </div>
-        <button onClick={() => supabase.auth.signOut()} className="text-xl">🚪</button>
-      </div>
+    <div className="min-h-screen bg-[#4D5645] font-sans pb-24 relative overflow-hidden">
+      {/* BACKGROUND DECORATION */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
 
-      <div className="no-print p-5 max-w-md mx-auto space-y-6">
-        <div className="bg-[#1E293B] p-8 rounded-[2rem] text-white shadow-xl">
-          <p className="text-xs font-bold text-slate-400 uppercase mb-1">Saldo Kas RW 02</p>
-          <h2 className="text-4xl font-black italic tracking-tighter">Rp {(totalMasuk - totalKeluar).toLocaleString()}</h2>
-        </div>
-
-        {role === 'admin' && (
-          <div className="grid grid-cols-2 gap-4">
-            <button onClick={() => { setTipe('masuk'); setShowModal(true); }} className="bg-emerald-600 text-white p-5 rounded-3xl font-black uppercase text-xs shadow-lg">+ Masuk</button>
-            <button onClick={() => { setTipe('keluar'); setShowModal(true); }} className="bg-rose-600 text-white p-5 rounded-3xl font-black uppercase text-xs shadow-lg">- Keluar</button>
+      {/* HEADER AREA */}
+      <div className="p-6 flex justify-between items-start relative z-10">
+        <div className="flex items-center gap-2">
+          <div className="bg-[#D9E253] p-2 rounded-lg font-black text-[#4D5645] leading-none text-center">
+            <span className="text-[10px] block">Kas</span>
+            <span className="text-xl">02</span>
+            <span className="text-xl block">RW</span>
           </div>
-        )}
-
-        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-           <h3 className="font-black text-xs uppercase mb-4 opacity-50 italic">Riwayat Terakhir</h3>
-           <div className="space-y-4">
-             {list.slice(0, 8).map(item => (
-               <div key={item.id} className="flex justify-between items-center border-b border-slate-50 pb-3">
-                 <div className="text-xs font-black uppercase truncate pr-4 text-slate-700">{item.keterangan}</div>
-                 <div className={`font-black italic text-xs ${item.tipe === 'masuk' ? 'text-emerald-600' : 'text-rose-600'}`}>Rp {item.nominal.toLocaleString()}</div>
-               </div>
-             ))}
-           </div>
+          <div className="text-white">
+            <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest">Jamaras Istimewa</p>
+          </div>
+        </div>
+        <div className="text-right text-white">
+          <p className="text-sm opacity-80 italic">Selamat Sore ,</p>
+          <p className="text-xl font-black">{fullName}</p>
         </div>
       </div>
 
+      {/* SALDO CARD AREA */}
+      <div className="px-5 mt-4 relative z-10">
+        <div className="bg-[#2C2C2C] rounded-[2rem] p-8 shadow-2xl border border-white/5">
+          <p className="text-center text-white/60 text-sm font-bold mb-1">Saldo Akhir</p>
+          <h2 className="text-center text-white text-5xl font-black tracking-tighter mb-8">
+            {saldoAkhir.toLocaleString('id-ID')}
+          </h2>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-[#1A1A1A] p-4 rounded-2xl text-center border border-white/5">
+              <p className="text-[10px] text-white/40 uppercase font-bold mb-1">Pemasukan</p>
+              <p className="text-white font-bold">{totalMasuk.toLocaleString('id-ID')}</p>
+            </div>
+            <div className="bg-[#1A1A1A] p-4 rounded-2xl text-center border border-white/5">
+              <p className="text-[10px] text-white/40 uppercase font-bold mb-1">Pengeluaran</p>
+              <p className="text-white font-bold">{totalKeluar.toLocaleString('id-ID')}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TABEL RIWAYAT AREA */}
+      <div className="px-5 mt-6 relative z-10">
+        <div className="bg-[#D9D9D9] rounded-t-3xl p-4">
+          <h3 className="font-bold text-sm text-slate-700 mb-4">Riwayat Transaksi</h3>
+          <div className="bg-white rounded-xl overflow-hidden shadow-inner">
+            <table className="w-full text-[10px] text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="p-3 font-bold text-slate-600">Tanggal</th>
+                  <th className="p-3 font-bold text-slate-600">Keterangan</th>
+                  <th className="p-3 font-bold text-slate-600 text-right">Nominal</th>
+                  <th className="p-3 font-bold text-slate-600 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {list.length > 0 ? list.map((item) => (
+                  <tr key={item.id}>
+                    <td className="p-3 whitespace-nowrap text-slate-500">
+                      {new Date(item.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})}
+                    </td>
+                    <td className="p-3 text-slate-700 font-medium leading-tight">
+                      {item.keterangan}
+                    </td>
+                    <td className={`p-3 text-right font-bold ${item.tipe === 'masuk' ? 'text-green-600' : 'text-red-600'}`}>
+                      {item.nominal.toLocaleString('id-ID')}
+                    </td>
+                    <td className="p-3 text-center text-blue-500 italic">edit / hapus</td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={4} className="p-10 text-center text-slate-400">Belum ada transaksi</td></tr>
+                )}
+                {/* Filler rows agar mirip desain */}
+                {[...Array(8)].map((_, i) => (
+                  <tr key={i} className="h-8 border-b border-slate-50">
+                    <td colSpan={4}></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* BOTTOM NAVIGATION */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#2C2C2C] h-20 flex justify-around items-center px-6 z-50 border-t border-white/5 no-print">
+        <button onClick={() => setTab('dashboard')} className={`flex flex-col items-center gap-1 ${tab === 'dashboard' ? 'text-[#D9E253]' : 'text-white/40'}`}>
+          <span className="text-[10px] font-bold uppercase tracking-widest">Dashboard</span>
+        </button>
+        <button onClick={() => { setTipe('masuk'); setShowModal(true); }} className={`flex flex-col items-center gap-1 ${tab === 'pemasukan' ? 'text-[#D9E253]' : 'text-white/40'}`}>
+          <span className="text-[10px] font-bold uppercase tracking-widest">Pemasukan</span>
+        </button>
+        <button onClick={() => { setTipe('keluar'); setShowModal(true); }} className={`flex flex-col items-center gap-1 ${tab === 'pengeluaran' ? 'text-[#D9E253]' : 'text-white/40'}`}>
+          <span className="text-[10px] font-bold uppercase tracking-widest">Pengeluaran</span>
+        </button>
+        <button onClick={() => setTab('report')} className={`flex flex-col items-center gap-1 ${tab === 'report' ? 'text-[#D9E253]' : 'text-white/40'}`}>
+          <span className="text-[10px] font-bold uppercase tracking-widest">Report</span>
+        </button>
+      </div>
+
+      {/* MODAL INPUT (TIDAK BERUBAH LOGIKANYA) */}
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8">
-            <h3 className="font-black text-xl mb-6 uppercase italic">Input Kas {tipe}</h3>
-            <div className="space-y-4 font-bold">
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl" />
-              <input type="number" placeholder="Nominal" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-xl" />
-              <textarea placeholder="Keterangan" value={desc} onChange={(e) => setDesc(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-sm" />
-              <input type="text" placeholder="Penerima/Penyetor" value={penerima} onChange={(e) => setPenerima(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-sm" />
-              <button onClick={() => { setShowModal(false); setShowStruk(true); }} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase italic">Cek Struk</button>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6 no-print">
+          <div className="bg-white w-full max-w-sm rounded-[2rem] p-8">
+            <h3 className="font-black text-xl mb-6 uppercase italic text-slate-800">Input {tipe}</h3>
+            <div className="space-y-4 font-bold text-slate-700">
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-4 bg-slate-100 rounded-2xl outline-none" />
+              <input type="number" placeholder="Nominal" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full p-4 bg-slate-100 rounded-2xl text-xl outline-none" />
+              <textarea placeholder="Keterangan" value={desc} onChange={(e) => setDesc(e.target.value)} className="w-full p-4 bg-slate-100 rounded-2xl text-sm outline-none" />
+              <input type="text" placeholder="Nama Penyetor/Penerima" value={penerima} onChange={(e) => setPenerima(e.target.value)} className="w-full p-4 bg-slate-100 rounded-2xl text-sm outline-none" />
+              <div className="flex gap-2 pt-4">
+                <button onClick={() => setShowModal(false)} className="flex-1 py-4 bg-slate-200 rounded-2xl font-bold">Batal</button>
+                <button onClick={() => { setShowModal(false); setShowStruk(true); }} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold">Simpan</button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* STRUK THERMAL - ANTI POTONG & FONT BESAR */}
+      {/* STRUK THERMAL (VERSI OPTIMAL UNTUK FHO.JPEG) */}
       {showStruk && (
         <div className="fixed inset-0 bg-white z-[999] font-mono text-slate-950 flex flex-col items-start print-page overflow-y-auto">
-          <div className="w-full max-w-[380px] pl-1 pr-12 pt-4 pb-8 flex flex-col">
+          <div className="w-full max-w-[380px] pl-2 pr-12 pt-4 pb-8 flex flex-col">
             <div className="text-center border-b-2 border-slate-950 pb-2 mb-4">
               <h1 className="text-2xl font-black">BUKTI KAS RW 02</h1>
-              <p className="text-xs font-bold uppercase">Jamaras - Cilengkrang</p>
+              <p className="text-xs font-bold uppercase tracking-tighter">Jamaras Istimewa - Cilengkrang</p>
             </div>
-
             <div className="space-y-3 text-lg font-bold">
               <div className="flex flex-col border-b border-dashed border-slate-300 pb-1">
                 <span className="text-[10px] uppercase text-slate-400 italic">Tanggal:</span>
@@ -163,34 +195,26 @@ export default function App() {
                 <p className="text-xl uppercase leading-none">{penerima || "-"}</p>
               </div>
             </div>
-
             <div className="mt-6 py-3 border-y-2 border-slate-950 flex justify-between items-center">
               <span className="text-lg font-black italic">TOTAL:</span>
-              <span className="text-4xl font-black">Rp {parseInt(amount).toLocaleString()}</span>
+              <span className="text-4xl font-black">Rp {parseInt(amount).toLocaleString('id-ID')}</span>
             </div>
-
             <div className="mt-8 grid grid-cols-2 gap-4 text-center text-xs font-bold">
               <div><p className="mb-14">Penyetor</p><div className="border-t border-slate-950 pt-1">({penerima || "---"})</div></div>
               <div><p className="mb-14">Bendahara</p><div className="border-t border-slate-950 pt-1">{fullName}</div></div>
             </div>
             <div className="mt-10 text-center text-[8px] opacity-30 uppercase">*** Dokumen Sah Digital ***</div>
           </div>
-
           <div className="mt-4 flex gap-2 no-print w-full max-w-[350px] px-4">
              <button onClick={() => setShowStruk(false)} className="flex-1 bg-slate-100 py-4 rounded-xl font-bold">BATAL</button>
-             <button onClick={handleConfirmAndPrint} className="flex-1 bg-slate-900 text-white py-4 rounded-xl font-bold">CETAK</button>
+             <button onClick={handleConfirmAndPrint} className="flex-1 bg-slate-900 text-white py-4 rounded-xl font-bold uppercase">Konfirmasi & Cetak</button>
           </div>
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t h-20 flex justify-around items-center no-print px-10">
-        <button onClick={() => setTab('beranda')} className={`flex flex-col items-center ${tab === 'beranda' ? 'text-slate-900' : 'text-slate-300'}`}>🏠<span className="text-[10px] font-bold">Utama</span></button>
-        <button onClick={() => setTab('laporan')} className={`flex flex-col items-center ${tab === 'laporan' ? 'text-slate-900' : 'text-slate-300'}`}>📊<span className="text-[10px] font-bold">Laporan</span></button>
-      </div>
-
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #4D5645; }
         @media print {
           body * { visibility: hidden; }
           .print-page, .print-page * { visibility: visible; }
