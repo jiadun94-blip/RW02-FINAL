@@ -98,8 +98,8 @@ export default function App() {
         <div className="flex items-center gap-3">
           <img src="/kas_rw1.png" alt="Logo" className="h-12" />
           <div className="text-white">
-            <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest leading-none">Keuangan</p>
-            <p className="text-lg font-black leading-none">RW 02</p>
+            <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest leading-none"></p>
+            <p className="text-lg font-black leading-none"></p>
           </div>
         </div>
         <div className="text-right text-white">
@@ -212,7 +212,7 @@ export default function App() {
           <div className="w-full max-w-[380px] pl-1 pr-12 pt-4 pb-8 flex flex-col">
             <div className="text-center border-b-2 border-slate-950 pb-2 mb-4">
               <h1 className="text-2xl font-black uppercase">Bukti Kas RW 02</h1>
-              <p className="text-xs font-bold uppercase tracking-tighter">Jamaras Istimewa - Cilengkrang</p>
+              <p className="text-xs font-bold uppercase tracking-tighter">Jamaras Istimewa - Jatihandap , Mandalajati</p>
             </div>
             <div className="space-y-3 text-lg font-bold">
               <div className="flex flex-col border-b border-dashed border-slate-300 pb-1">
