@@ -11,6 +11,7 @@ export default function App() {
   const [tab, setTab] = useState<'dashboard' | 'report'>('dashboard');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false); // State daftar kembali ditambahkan
   
   const [showModal, setShowModal] = useState(false);
   const [showStruk, setShowStruk] = useState(false);
@@ -20,7 +21,6 @@ export default function App() {
   const [desc, setDesc] = useState('');
   const [penerima, setPenerima] = useState('');
 
-  // Filter State
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
 
@@ -35,7 +35,7 @@ export default function App() {
     setSession(session);
     if (session) {
       setRole(session.user.user_metadata?.role || 'user');
-      setFullName(session.user.user_metadata?.full_name || 'Hadiat');
+      setFullName(session.user.user_metadata?.full_name || 'User');
     }
   };
 
@@ -49,31 +49,19 @@ export default function App() {
     setLoading(true);
     const email = e.target.email.value;
     const password = e.target.password.value;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert("Email/Password Salah!");
-    setLoading(false);
-  };
 
-  const handleConfirmAndPrint = async () => {
-    if (!amount || !desc) return alert("Isi data dulu!");
-    setLoading(true);
-    const keteranganFinal = `${desc.toUpperCase()} (OLEH: ${penerima.toUpperCase()})`;
-    const { error } = await supabase.from('transaksi').insert([{ 
-      keterangan: keteranganFinal, nominal: parseInt(amount), tipe, created_at: new Date(date).toISOString()
-    }]);
-
-    if (!error) {
-      fetchData();
-      setTimeout(() => {
-        window.print();
-        setLoading(false);
-        setShowStruk(false);
-        setAmount(''); setDesc(''); setPenerima('');
-      }, 500);
+    if (isSignUp) {
+      const name = e.target.name.value;
+      const { error } = await supabase.auth.signUp({ 
+        email, password, options: { data: { full_name: name, role: 'user' } } 
+      });
+      if (error) alert(error.message); else alert("Daftar berhasil! Silakan login.");
+      setIsSignUp(false);
     } else {
-      alert("Gagal Simpan: " + error.message);
-      setLoading(false);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) alert("Email/Password Salah!");
     }
+    setLoading(false);
   };
 
   // EXPORT FUNCTIONS
@@ -115,13 +103,25 @@ export default function App() {
   const saldoAkhir = totalMasuk - totalKeluar;
 
   if (!session) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#4D5645] p-6 font-roboto italic">
+    <div className="min-h-screen flex items-center justify-center bg-[#4D5645] p-6 font-roboto">
        <div className="bg-white p-8 rounded-[2rem] w-full max-w-sm shadow-2xl text-center">
-         <form onSubmit={handleAuthAction} className="space-y-5">
+         <form onSubmit={handleAuthAction} className="space-y-4">
            <img src="/kas_rw1.png" className="h-20 mx-auto mb-2" />
+           <h2 className="font-black text-xl uppercase text-slate-800">{isSignUp ? 'Daftar Akun' : 'Login Kas'}</h2>
+           {isSignUp && (
+             <input name="name" type="text" placeholder="Nama Lengkap" className="w-full p-4 bg-slate-100 rounded-xl outline-none font-medium" required />
+           )}
            <input name="email" type="email" placeholder="Email" className="w-full p-4 bg-slate-100 rounded-xl outline-none font-medium" required />
            <input name="password" type="password" placeholder="Password" className="w-full p-4 bg-slate-100 rounded-xl outline-none font-medium" required />
-           <button className="w-full bg-[#4D5645] text-white py-4 rounded-xl font-black uppercase">{loading ? '...' : 'Masuk'}</button>
+           <button className="w-full bg-[#4D5645] text-white py-4 rounded-xl font-black uppercase shadow-lg">
+             {loading ? 'Proses...' : (isSignUp ? 'Daftar Sekarang' : 'Masuk')}
+           </button>
+           <p className="text-xs font-bold text-slate-400 uppercase pt-2">
+             {isSignUp ? 'Sudah punya akun?' : 'Belum punya akun?'} 
+             <span onClick={() => setIsSignUp(!isSignUp)} className="text-[#4D5645] ml-1 underline cursor-pointer">
+               {isSignUp ? 'Login di sini' : 'Daftar di sini'}
+             </span>
+           </p>
          </form>
        </div>
     </div>
@@ -129,7 +129,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#4D5645] font-roboto pb-28">
-      {/* DASHBOARD TAB */}
       {tab === 'dashboard' && (
         <>
           <div className="p-6 flex justify-between items-center no-print text-white">
@@ -160,7 +159,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* LIST TRANSAKSI (Sesuai Order: Keterangan melanjut ke bawah, font 10px, tanpa 'Oleh') */}
           <div className="mt-6 px-4 no-print">
             <h3 className="font-black text-sm text-white/60 uppercase italic mb-3 px-2 tracking-widest">● Riwayat Kas</h3>
             <div className="space-y-2">
@@ -172,7 +170,6 @@ export default function App() {
                       <span className="text-base">{new Date(item.created_at).toLocaleDateString('id-ID', {day:'2-digit'})}</span>
                     </div>
                     <div className="flex flex-col pr-2">
-                      {/* Font Ukuran 10px & Wrap Text ke bawah */}
                       <span className="text-slate-800 font-bold text-[10px] uppercase leading-normal break-words">
                         {item.keterangan.split(' (OLEH:')[0]}
                       </span>
@@ -190,12 +187,9 @@ export default function App() {
         </>
       )}
 
-      {/* REPORT TAB */}
       {tab === 'report' && (
         <div className="p-6 text-white no-print">
           <h2 className="text-2xl font-black uppercase mb-6 italic">Laporan Kas</h2>
-          
-          {/* FILTER */}
           <div className="bg-[#2C2C2C] p-6 rounded-[2rem] border border-white/10 space-y-4 mb-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -211,14 +205,11 @@ export default function App() {
                 </select>
               </div>
             </div>
-            
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button onClick={exportToExcel} className="bg-emerald-600 py-3 rounded-xl font-black uppercase text-xs">Excel 📗</button>
               <button onClick={exportToPDF} className="bg-rose-600 py-3 rounded-xl font-black uppercase text-xs">PDF 📕</button>
             </div>
           </div>
-
-          {/* PREVIEW FILTERED */}
           <div className="bg-white rounded-[1.5rem] overflow-hidden">
             <table className="w-full text-[10px] text-left">
               <thead className="bg-slate-100 text-slate-500 font-black">
@@ -256,7 +247,7 @@ export default function App() {
         </button>
       </div>
 
-      {/* MODAL & STRUK (Sama seperti sebelumnya) */}
+      {/* MODAL INPUT */}
       {showModal && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 no-print">
           <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl">
@@ -275,12 +266,13 @@ export default function App() {
         </div>
       )}
 
+      {/* STRUK PRINT */}
       {showStruk && (
         <div className="fixed inset-0 bg-white z-[999] text-black flex flex-col items-start print-page overflow-y-auto p-4">
           <div className="w-full max-w-[350px] border-4 border-black p-4">
             <div className="text-center border-b-4 border-black pb-2 mb-4">
               <h1 className="text-2xl font-black uppercase leading-none">BUKTI KAS RW 02</h1>
-              <p className="text-xs font-black uppercase">Jamaras Istimewa - Jatihandap,Mandalajati</p>
+              <p className="text-xs font-black uppercase">Jamaras Istimewa - Cilengkrang</p>
             </div>
             <div className="space-y-4 text-black font-bold">
               <div className="border-b-2 border-dashed border-black pb-1"><p className="text-[10px] uppercase italic">Tanggal</p><p className="text-lg uppercase">{new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p></div>
