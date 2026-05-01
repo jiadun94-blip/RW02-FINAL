@@ -11,7 +11,7 @@ export default function App() {
   const [tab, setTab] = useState<'dashboard' | 'report'>('dashboard');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false); // State daftar kembali ditambahkan
+  const [isSignUp, setIsSignUp] = useState(false);
   
   const [showModal, setShowModal] = useState(false);
   const [showStruk, setShowStruk] = useState(false);
@@ -64,7 +64,37 @@ export default function App() {
     setLoading(false);
   };
 
-  // EXPORT FUNCTIONS
+  // FUNGSI CETAK YANG DIPERBAIKI
+  const handleConfirmAndPrint = async () => {
+    if (!amount || !desc) return alert("Isi data dulu!");
+    setLoading(true);
+    
+    const keteranganFinal = `${desc.toUpperCase()} (OLEH: ${penerima.toUpperCase()})`;
+
+    const { error } = await supabase.from('transaksi').insert([{ 
+      keterangan: keteranganFinal, 
+      nominal: parseInt(amount), 
+      tipe, 
+      created_at: new Date(date).toISOString()
+    }]);
+
+    if (!error) {
+      fetchData();
+      // Step 1: Munculkan komponen struk di DOM
+      setShowStruk(true); 
+      
+      // Step 2: Beri jeda 800ms agar browser selesai merender visual struk
+      setTimeout(() => {
+        window.print();
+        setLoading(false);
+        // Step 3: Biarkan struk tetap muncul, user yang klik "KEMBALI" nanti
+      }, 800);
+    } else {
+      alert("Gagal Simpan: " + error.message);
+      setLoading(false);
+    }
+  };
+
   const filteredData = list.filter(item => {
     const d = new Date(item.created_at);
     return (d.getMonth() + 1 === filterMonth && d.getFullYear() === filterYear);
@@ -266,30 +296,41 @@ export default function App() {
         </div>
       )}
 
-      {/* STRUK PRINT */}
+      {/* STRUK PRINT (PENYEBAB UTAMA MASALAH) */}
       {showStruk && (
-        <div className="fixed inset-0 bg-white z-[999] text-black flex flex-col items-start print-page overflow-y-auto p-4">
-          <div className="w-full max-w-[350px] border-4 border-black p-4">
+        <div id="struk-area" className="fixed inset-0 bg-white z-[999] text-black flex flex-col items-center print-page overflow-y-auto p-4">
+          <div className="w-full max-w-[350px] border-4 border-black p-4 bg-white">
             <div className="text-center border-b-4 border-black pb-2 mb-4">
               <h1 className="text-2xl font-black uppercase leading-none">BUKTI KAS RW 02</h1>
               <p className="text-xs font-black uppercase">Jamaras Istimewa - Cilengkrang</p>
             </div>
             <div className="space-y-4 text-black font-bold">
-              <div className="border-b-2 border-dashed border-black pb-1"><p className="text-[10px] uppercase italic">Tanggal</p><p className="text-lg uppercase">{new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p></div>
-              <div className="border-b-2 border-dashed border-black pb-1"><p className="text-[10px] uppercase italic">Keterangan</p><p className="text-xl font-black uppercase">{desc}</p></div>
-              <div className="border-b-2 border-dashed border-black pb-1"><p className="text-[10px] uppercase italic">Oleh</p><p className="text-xl font-black uppercase">{penerima || "-"}</p></div>
+              <div className="border-b-2 border-dashed border-black pb-1">
+                <p className="text-[10px] uppercase italic">Tanggal</p>
+                <p className="text-lg uppercase">{new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+              </div>
+              <div className="border-b-2 border-dashed border-black pb-1">
+                <p className="text-[10px] uppercase italic">Keterangan</p>
+                <p className="text-xl font-black uppercase">{desc}</p>
+              </div>
+              <div className="border-b-2 border-dashed border-black pb-1">
+                <p className="text-[10px] uppercase italic">Oleh</p>
+                <p className="text-xl font-black uppercase">{penerima || "-"}</p>
+              </div>
             </div>
             <div className="mt-6 py-4 border-y-4 border-black flex justify-between items-center font-black">
-              <span className="text-xl italic">TOTAL</span><span className="text-4xl italic">Rp {parseInt(amount).toLocaleString('id-ID')}</span>
+              <span className="text-xl italic">TOTAL</span>
+              <span className="text-4xl italic">Rp {parseInt(amount).toLocaleString('id-ID')}</span>
             </div>
             <div className="mt-10 grid grid-cols-2 gap-8 text-center text-xs font-black">
               <div><p className="mb-16 uppercase">Penyetor</p><p className="border-t-2 border-black pt-1">({penerima || "---"})</p></div>
               <div><p className="mb-16 uppercase">Bendahara</p><p className="border-t-2 border-black pt-1">{fullName}</p></div>
             </div>
           </div>
+          {/* Tombol Navigasi Struk (Hanya terlihat di layar) */}
           <div className="mt-8 flex gap-3 no-print w-full max-w-[350px] pb-24">
-             <button onClick={() => setShowStruk(false)} className="flex-1 bg-slate-200 py-4 rounded-xl font-black">KEMBALI</button>
-             <button onClick={handleConfirmAndPrint} disabled={loading} className="flex-1 bg-black text-white py-4 rounded-xl font-black uppercase">{loading ? '...' : 'CETAK'}</button>
+             <button onClick={() => setShowStruk(false)} className="flex-1 bg-slate-200 py-4 rounded-xl font-black uppercase text-sm">Kembali</button>
+             <button onClick={() => window.print()} className="flex-1 bg-black text-white py-4 rounded-xl font-black uppercase text-sm">Cetak Ulang</button>
           </div>
         </div>
       )}
@@ -298,11 +339,22 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
         .font-roboto { font-family: 'Roboto', sans-serif; }
         body { background-color: #4D5645; -webkit-font-smoothing: antialiased; }
+        
         @media print {
-          body { background-color: white !important; }
+          body { background-color: white !important; padding: 0 !important; margin: 0 !important; }
           .no-print { display: none !important; }
-          .print-page { position: absolute; top: 0; left: 0; width: 100%; visibility: visible !important; margin: 0; padding: 20px; }
-          .print-page * { visibility: visible !important; color: black !important; border-color: black !important; }
+          .print-page { 
+            position: absolute !important; 
+            top: 0 !important; 
+            left: 0 !important; 
+            width: 100% !important; 
+            visibility: visible !important; 
+            display: flex !important;
+            justify-content: center !important;
+            padding: 0 !important;
+          }
+          /* Hilangkan margin default browser saat print */
+          @page { margin: 0; } 
         }
       `}</style>
     </div>
