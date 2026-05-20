@@ -58,7 +58,7 @@ export default function App() {
     if (!printerCharacteristic) return;
     const encoder = new TextEncoder();
     const line = "--------------------------------\n";
-    const br = "\n"; // Jeda antar baris
+    const br = "\n";
     
     const header = "\x1B\x61\x01\x1B\x45\x01BUKTI KAS RW02\nJAMARAS ISTIMEWA\x1B\x45\x00\x1B\x61\x00\n" + br;
     
@@ -102,7 +102,6 @@ export default function App() {
     setLoading(false);
   };
 
-  // Logika Laporan
   const filterByMonth = (month: number, year: number) => {
     return list.filter(item => {
       const d = new Date(item.created_at);
@@ -113,7 +112,8 @@ export default function App() {
   if (!session) return (
     <div className="auth-bg">
       <div className="auth-card">
-        <h2 style={{color:'#d4e157'}}>{isSignUp ? 'DAFTAR WARGA' : 'LOGIN KAS RW'}</h2>
+        <h2>{isSignUp ? 'DAFTAR WARGA' : 'KAS RW DIGITAL'}</h2>
+        <p style={{color: '#94a3b8', fontSize:'13px', marginBottom:'20px'}}>Sistem Informasi Keuangan Transparan</p>
         <form onSubmit={async (e:any) => {
           e.preventDefault();
           setLoading(true);
@@ -130,15 +130,23 @@ export default function App() {
           setLoading(false);
         }}>
           {isSignUp && <input name="fullname" type="text" placeholder="Nama Lengkap" required />}
-          <input name="email" type="email" placeholder="Email" required />
-          <input name="password" type="password" placeholder="Password" required />
-          <button className="btn-accent" type="submit">{loading ? '...' : (isSignUp ? 'DAFTAR' : 'MASUK')}</button>
+          <input name="email" type="email" placeholder="Alamat Email" required />
+          <input name="password" type="password" placeholder="Kata Sandi" required />
+          <button className="btn-accent" type="submit">{loading ? 'Memproses...' : (isSignUp ? 'BUAT AKUN' : 'MASUK KE APLIKASI')}</button>
         </form>
-        <p onClick={() => setIsSignUp(!isSignUp)} style={{fontSize:'12px', marginTop:'15px', color:'#aaa', cursor:'pointer'}}>
-          {isSignUp ? 'Sudah punya akun? Login' : 'Belum punya akun? Daftar'}
+        <p onClick={() => setIsSignUp(!isSignUp)} style={{fontSize:'13px', marginTop:'20px', color:'#10b981', cursor:'pointer', fontWeight:'500'}}>
+          {isSignUp ? 'Sudah punya akun? Login di sini' : 'Belum punya akun? Daftar sebagai warga'}
         </p>
       </div>
-      <style>{`.auth-bg{background:#1a1a1a;height:100vh;display:flex;align-items:center;justify-content:center;}.auth-card{background:#2c2e2c;padding:30px;border-radius:20px;width:80%;text-align:center;}input{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #444;background:#222;color:#fff;box-sizing:border-box;}.btn-accent{background:#d4e157;color:#000;padding:15px;width:100%;border:none;border-radius:10px;font-weight:bold;cursor:pointer;}`}</style>
+      <style>{`
+        .auth-bg { background: radial-gradient(circle at top right, #1e293b, #0f172a); height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', sans-serif; }
+        .auth-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); padding: 40px 30px; border-radius: 24px; width: 85%; max-width: 400px; text-align: center; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .auth-card h2 { color: #ffffff; font-size: 24px; margin: 0 0 5px 0; letter-spacing: 1px; font-weight: 700; }
+        input { width: 100%; padding: 14px 16px; margin: 10px 0; border-radius: 12px; border: 1px solid #334155; background: rgba(15, 23, 42, 0.6); color: #fff; box-sizing: border-box; font-size: 14px; transition: all 0.3s ease; }
+        input:focus { border-color: #10b981; outline: none; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
+        .btn-accent { background: linear-gradient(135deg, #10b981, #059669); color: #fff; padding: 14px; width: 100%; border: none; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; margin-top: 10px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .btn-accent:block { transform: scale(0.98); }
+      `}</style>
     </div>
   );
 
@@ -146,14 +154,14 @@ export default function App() {
     <div className="main-container">
       <header>
         <div className="user-info">
-          <div>Selamat datang</div>
-          <div style={{fontWeight:'bold', fontSize:'20px'}}>{fullName}</div>
+          <div style={{fontSize: '12px', color: '#64748b', textTransform:'uppercase', letterSpacing:'1px'}}>Monev Kas RW 02</div>
+          <div style={{fontWeight:'700', fontSize:'22px', color: '#1e293b'}}>{fullName}</div>
         </div>
-        <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
+        <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
           <button onClick={connectPrinter} className={`bt-conn ${isPrinterConnected ? 'active' : ''}`}>
-            {isPrinterConnected ? 'PRINTER ON' : 'KONEK PRINTER'}
+            <span className="dot"></span> {isPrinterConnected ? 'PRINTER READY' : 'HUBUNGKAN'}
           </button>
-          <button onClick={() => supabase.auth.signOut()} style={{background:'none', border:'none', color:'#1a1a1a', fontSize:'11px', fontWeight:'bold'}}>OUT</button>
+          <button onClick={() => supabase.auth.signOut()} className="btn-logout">KELUAR</button>
         </div>
       </header>
 
@@ -161,64 +169,82 @@ export default function App() {
         {tab === 'dashboard' && (
           <>
             <div className="card-summary">
-              <div style={{fontSize:'12px', color:'#b0b0b0'}}>Saldo Akhir</div>
+              <div style={{fontSize:'13px', color:'rgba(255,255,255,0.7)', fontWeight: '500'}}>Total Saldo Warga</div>
               <div className="total-saldo">Rp {(list.filter(i=>i.tipe==='masuk').reduce((a,b)=>a+b.nominal,0)-list.filter(i=>i.tipe==='keluar').reduce((a,b)=>a+b.nominal,0)).toLocaleString('id-ID')}</div>
               <div className="grid-info">
                 <div className="sub-card">
-                  <div className="label">Pemasukan</div>
-                  <div className="val">{list.filter(i=>i.tipe==='masuk').reduce((a,b)=>a+b.nominal,0).toLocaleString('id-ID')}</div>
+                  <div className="label">⚡ Total Masuk</div>
+                  <div className="val" style={{color: '#34d399'}}>+ {list.filter(i=>i.tipe==='masuk').reduce((a,b)=>a+b.nominal,0).toLocaleString('id-ID')}</div>
                 </div>
                 <div className="sub-card">
-                  <div className="label">Pengeluaran</div>
-                  <div className="val">{list.filter(i=>i.tipe==='keluar').reduce((a,b)=>a+b.nominal,0).toLocaleString('id-ID')}</div>
+                  <div className="label">💸 Total Keluar</div>
+                  <div className="val" style={{color: '#f87171'}}>- {list.filter(i=>i.tipe==='keluar').reduce((a,b)=>a+b.nominal,0).toLocaleString('id-ID')}</div>
                 </div>
               </div>
             </div>
+            
             <div className="riwayat-section">
-              <h3>Riwayat Terkini</h3>
-              <table>
-                <tbody>
-                  {list.slice(0, 10).map(item => (
-                    <tr key={item.id}>
-                      <td style={{fontSize:'11px'}}>{new Date(item.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short'})}</td>
-                      <td>{item.keterangan.split(' (')[0]}</td>
-                      <td style={{textAlign:'right', fontWeight:'bold', color:item.tipe==='masuk'?'#2e7d32':'#c62828'}}>{item.nominal.toLocaleString('id-ID')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '15px'}}>
+                <h3 style={{margin: 0, fontSize: '16px', color: '#1e293b', fontWeight: '600'}}>Mutasi Kas Terbaru</h3>
+                <span style={{fontSize:'12px', color:'#64748b'}}>10 Data Terakhir</span>
+              </div>
+              <div style={{overflowX:'auto'}}>
+                <table>
+                  <tbody>
+                    {list.slice(0, 10).map(item => (
+                      <tr key={item.id} className="table-row-animate">
+                        <td style={{color: '#94a3b8', fontWeight: '500', width: '55px'}}>
+                          {new Date(item.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short'})}
+                        </td>
+                        <td style={{fontWeight: '500', color: '#334155'}}>
+                          {item.keterangan.split(' (')[0]}
+                        </td>
+                        <td style={{textAlign:'right', fontWeight:'600', fontSize:'15px', color:item.tipe==='masuk'?'#10b981':'#ef4444'}}>
+                          {item.tipe === 'masuk' ? '+' : '-'} {item.nominal.toLocaleString('id-ID')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </>
         )}
 
         {tab === 'input' && (
           <div className="page-input-container">
-             <h2 style={{color:'#d4e157', marginBottom:'20px'}}>INPUT {tipe.toUpperCase()}</h2>
-             <div className="input-group">
-                <label>Tanggal</label>
-                <input type="date" value={date} onChange={e=>setDate(e.target.value)} />
+             <div className="badge-type" style={{background: tipe==='masuk'?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.15)', color: tipe==='masuk'?'#10b981':'#ef4444'}}>
+                PENCATATAN KAS {tipe.toUpperCase()}
              </div>
-             <div className="input-group">
-                <label>Keterangan</label>
-                <input type="text" placeholder="Contoh: Iuran Keamanan" value={desc} onChange={e=>setDesc(e.target.value)} />
+             <div className="input-grid-form">
+               <div className="input-group">
+                  <label>Tanggal Transaksi</label>
+                  <input type="date" value={date} onChange={e=>setDate(e.target.value)} />
+               </div>
+               <div className="input-group">
+                  <label>Keterangan Alokasi</label>
+                  <input type="text" placeholder="Misal: Iuran Bulanan Warga" value={desc} onChange={e=>setDesc(e.target.value)} />
+               </div>
+               <div className="input-group">
+                  <label>Nominal Tunai (Rp)</label>
+                  <input type="number" placeholder="0" value={amount} onChange={e=>setAmount(e.target.value)} />
+               </div>
+               <div className="input-group">
+                  <label>Petugas Penanggung Jawab</label>
+                  <input type="text" placeholder="Nama Pengurus" value={penerima} onChange={e=>setPenerima(e.target.value)} />
+               </div>
              </div>
-             <div className="input-group">
-                <label>Nominal (Rp)</label>
-                <input type="number" placeholder="0" value={amount} onChange={e=>setAmount(e.target.value)} />
-             </div>
-             <div className="input-group">
-                <label>Petugas/Penerima</label>
-                <input type="text" placeholder="Nama Petugas" value={penerima} onChange={e=>setPenerima(e.target.value)} />
-             </div>
-             <button className="btn-accent" style={{marginTop:'20px'}} onClick={handleSimpan} disabled={loading}>{loading ? 'MENYIMPAN...' : 'SIMPAN & CETAK STRUK'}</button>
-             <button onClick={()=>setTab('dashboard')} className="btn-cancel">KEMBALI KE DASHBOARD</button>
+             <button className="btn-accent-simpan" onClick={handleSimpan} disabled={loading}>
+               {loading ? 'Menyimpan...' : '⚡ SIMPAN & CETAK STRUK'}
+             </button>
+             <button onClick={()=>setTab('dashboard')} className="btn-cancel">BATALKAN</button>
           </div>
         )}
 
         {tab === 'report' && (
-          <div className="riwayat-section" style={{borderRadius:'20px', marginTop:'0'}}>
-             <h3 style={{marginBottom:'15px'}}>Laporan Kas Per Bulan</h3>
-             <div style={{maxHeight:'70vh', overflowY:'auto'}}>
+          <div className="report-container">
+             <h3 style={{color: '#1e293b', marginTop: '0', marginBottom: '20px', fontSize: '18px'}}>Arsip Kas Bulanan</h3>
+             <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
                 {[...new Set(list.map(i => {
                    const d = new Date(i.created_at);
                    return `${d.getMonth()}-${d.getFullYear()}`;
@@ -229,12 +255,18 @@ export default function App() {
                    const totalK = filtered.filter(f=>f.tipe==='keluar').reduce((a,b)=>a+b.nominal,0);
                    return (
                      <div key={period} className="report-item">
-                        <div style={{fontWeight:'bold', borderBottom:'1px solid #eee', paddingBottom:'5px', marginBottom:'5px'}}>
+                        <div className="report-month-title">
                           {new Date(parseInt(y), parseInt(m)).toLocaleDateString('id-ID', {month:'long', year:'numeric'})}
                         </div>
-                        <div style={{display:'flex', justifyContent:'space-between', fontSize:'13px'}}>
-                           <span>Masuk: <b style={{color:'green'}}>{totalM.toLocaleString('id-ID')}</b></span>
-                           <span>Keluar: <b style={{color:'red'}}>{totalK.toLocaleString('id-ID')}</b></span>
+                        <div className="report-details">
+                           <div className="rep-box">
+                             <span className="rep-lbl">Pemasukan</span>
+                             <span className="rep-val" style={{color:'#10b981'}}>Rp {totalM.toLocaleString('id-ID')}</span>
+                           </div>
+                           <div className="rep-box">
+                             <span className="rep-lbl">Pengeluaran</span>
+                             <span className="rep-val" style={{color:'#ef4444'}}>Rp {totalK.toLocaleString('id-ID')}</span>
+                           </div>
                         </div>
                      </div>
                    );
@@ -245,43 +277,94 @@ export default function App() {
       </div>
 
       <nav className="bottom-nav">
-        <div className={`nav-item ${tab === 'dashboard' ? 'active' : ''}`} onClick={() => setTab('dashboard')}>Beranda</div>
+        <div className={`nav-item ${tab === 'dashboard' ? 'active' : ''}`} onClick={() => setTab('dashboard')}>
+          <div className="nav-icon">📊</div>
+          <span>Dashboard</span>
+        </div>
         {role === 'admin' && (
           <>
-            <div className="nav-item" onClick={() => {setTipe('masuk'); setTab('input')}}>Kas Masuk</div>
-            <div className="nav-item" onClick={() => {setTipe('keluar'); setTab('input')}}>Kas Keluar</div>
+            <div className="nav-item-pay masuk" onClick={() => {setTipe('masuk'); setTab('input')}}>
+              <div className="pay-circle">+</div>
+              <span>Kas Masuk</span>
+            </div>
+            <div className="nav-item-pay keluar" onClick={() => {setTipe('keluar'); setTab('input')}}>
+              <div className="pay-circle">-</div>
+              <span>Kas Keluar</span>
+            </div>
           </>
         )}
-        <div className={`nav-item ${tab === 'report' ? 'active' : ''}`} onClick={() => setTab('report')}>Laporan</div>
+        <div className={`nav-item ${tab === 'report' ? 'active' : ''}`} onClick={() => setTab('report')}>
+          <div className="nav-icon">📜</div>
+          <span>Laporan</span>
+        </div>
       </nav>
 
       <style>{`
-        .main-container { font-family: 'Segoe UI', sans-serif; background: url('bgrw.png') no-repeat center center fixed; background-size: cover; color: white; height: 100vh; display: flex; flex-direction: column; }
-        header { padding: 35px 20px 10px 140px; display:flex; justify-content:space-between; align-items:center; }
-        .user-info { color: #1a1a1a; line-height: 1.2; }
-        .bt-conn { font-size: 9px; padding: 6px 8px; border-radius: 8px; border: none; background: #333; color: white; font-weight: bold; }
-        .bt-conn.active { background: #2e7d32; }
-        .content { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 100px; }
-        .card-summary { background: rgba(44, 46, 44, 0.95); border-radius: 15px; padding: 20px; margin-bottom: 20px; }
-        .total-saldo { font-size: 38px; font-weight: bold; text-align: center; color: #d4e157; margin: 10px 0; }
-        .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .sub-card { background: rgba(0,0,0,0.4); padding: 10px; border-radius: 10px; text-align: center; }
-        .label { font-size: 10px; color: #b0b0b0; }
-        .val { font-weight: bold; font-size: 14px; }
-        .riwayat-section { background: white; color: #333; border-radius: 20px; padding: 20px; margin-top: 10px; }
+        /* Global & Reset Layout modern */
+        body { margin: 0; background-color: #f8fafc; }
+        .main-container { font-family: 'SF Pro Display', -apple-system, 'Segoe UI', sans-serif; background: #f1f5f9; color: #334155; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Header Glassmorphic Putih Bersih */
+        header { padding: 20px; display:flex; justify-content:space-between; align-items:center; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .btn-logout { background: #fee2e2; border: none; color: #ef4444; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
+        
+        /* Bluetooth Button Badge */
+        .bt-conn { font-size: 11px; padding: 8px 12px; border-radius: 20px; border: 1px solid #e2e8f0; background: white; color: #334155; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .bt-conn .dot { width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; }
+        .bt-conn.active { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+        .bt-conn.active .dot { background: #22c55e; animation: pulse 1.5s infinite; }
+
+        @keyframes pulse { 0% { transform: scale(0.9); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.5; } 100% { transform: scale(0.9); opacity: 1; } }
+
+        /* Container Content Utama */
+        .content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 120px; }
+        
+        /* Card Utama Fintech Gradient Card (Wow factor) */
+        .card-summary { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 24px; padding: 25px; margin-bottom: 25px; box-shadow: 0 12px 24px rgba(15,23,42,0.15); color: white; position: relative; overflow: hidden; }
+        .card-summary::before { content: ''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(16, 185, 129, 0.1); border-radius: 50%; blur: 50px; }
+        .total-saldo { font-size: 34px; font-weight: 800; color: #ffffff; margin: 8px 0 20px 0; letter-spacing: -0.5px; }
+        .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .sub-card { background: rgba(255,255,255,0.06); padding: 12px 15px; border-radius: 16px; text-align: left; border: 1px solid rgba(255,255,255,0.04); }
+        .sub-card .label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; font-weight: 500; }
+        .sub-card .val { font-weight: 700; font-size: 15px; }
+
+        /* Section Tabel Riwayat (iOS Style Card) */
+        .riwayat-section { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 18px rgba(0,0,0,0.03); }
         table { width: 100%; border-collapse: collapse; }
-        td { padding: 12px 0; border-bottom: 1px solid #f9f9f9; font-size: 13px; }
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #2c2e2c; display: flex; justify-content: space-around; padding: 15px 0; border-radius: 20px 20px 0 0; }
-        .nav-item { color: #888; font-size: 11px; cursor: pointer; text-align: center; }
-        .nav-item.active { color: #d4e157; font-weight: bold; }
+        td { padding: 14px 8px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        tr:last-child td { border-bottom: none; }
         
-        /* Gaya Input yang Lebih Friendly */
-        .page-input-container { background: #2c2e2c; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .input-group { margin-bottom: 15px; text-align: left; }
-        .input-group label { display: block; font-size: 12px; color: #d4e157; margin-bottom: 5px; margin-left: 5px; }
-        .btn-cancel { background: none; border: 1px solid #555; color: #888; width: 100%; margin-top: 15px; padding: 12px; border-radius: 10px; font-size: 12px; }
+        /* Form Input Section Premium */
+        .page-input-container { background: white; padding: 25px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); }
+        .badge-type { display: inline-block; padding: 6px 12px; border-radius: 30px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 20px; }
+        .input-group { margin-bottom: 18px; }
+        .input-group label { display: block; font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 600; padding-left: 2px; }
+        .page-input-container input { background: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b; font-size: 15px; padding: 12px 14px; border-radius: 12px; }
+        .page-input-container input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        .btn-accent-simpan { background: #1e293b; color: white; width: 100%; border: none; padding: 14px; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
+        .btn-accent-simpan:hover { background: #0f172a; }
+        .btn-cancel { background: #f1f5f9; border: none; color: #64748b; width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+        /* Report / Arsip Bulanan */
+        .report-container { background: white; padding: 20px; border-radius: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .report-item { background: #f8fafc; padding: 16px; border-radius: 16px; border: 1px solid #e2e8f0; }
+        .report-month-title { font-weight: 700; color: #1e293b; font-size: 15px; margin-bottom: 10px; }
+        .report-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .rep-box { display: flex; flex-direction: column; background: white; padding: 8px 12px; border-radius: 10px; border: 1px solid #f1f5f9; }
+        .rep-lbl { font-size: 10px; color: #94a3b8; font-weight: 500; }
+        .rep-val { font-size: 13px; font-weight: 700; margin-top: 2px; }
+
+        /* Bottom Nav Gaya Floating Dock (Sangat keren di Mobile Browser) */
+        .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; align-items: center; padding: 10px 5px; border-radius: 20px; box-shadow: 0 10px 25px rgba(15,23,42,0.3); box-sizing: border-box; }
+        .nav-item { color: #64748b; font-size: 10px; cursor: pointer; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.2s; width: 60px; }
+        .nav-icon { font-size: 18px; }
+        .nav-item.active { color: #34d399; font-weight: 600; }
         
-        .report-item { background: #f9f9f9; padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; }
+        /* Tombol Bundar Aksi Cepat Kas Masuk/Keluar */
+        .nav-item-pay { text-align: center; color: #94a3b8; font-size: 9px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .pay-circle { width: 32px; height: 32px; border-radius: 50%; color: white; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .nav-item-pay.masuk .pay-circle { background: #10b981; }
+        .nav-item-pay.keluar .pay-circle { background: #ef4444; }
       `}</style>
     </div>
   );
