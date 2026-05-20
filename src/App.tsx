@@ -57,25 +57,59 @@ export default function App() {
   const sendToPrinter = async (data: any) => {
     if (!printerCharacteristic) return;
     const encoder = new TextEncoder();
-    const line = "--------------------------------\n";
-    const br = "\n";
     
-    const header = "\x1B\x61\x01\x1B\x45\x01BUKTI KAS RW02\nJAMARAS ISTIMEWA\x1B\x45\x00\x1B\x61\x00\n" + br;
-    
-    const body = 
-      line + br +
-      `TGL      : ${data.tgl}\n` + br +
-      `TRX      : UANG ${data.tipe.toUpperCase()}\n` + br +
-      `NOMINAL  : Rp.${data.nominal},-\n` + br +
-      `KET      : ${data.ket}\n` + br +
-      `PETUGAS  : ${data.oleh}\n` + br +
-      line + br +
-      "\x1B\x61\x01SIMPAN STRUK INI SEBAGAI TANDA\nTERIMA\n" + br +
-      "TERIMA KASIH\n" + br +
-      "\x1B\x61\x00BENDAHARA\n\n\n" +
-      "(              )\n\n\n\n";
+    // ================= PERINTAH ESC/POS PRINTER THERMAL (GAYA SPBU) =================
+    const RESET       = "\x1B\x40";       // Reset printer ke bawaan
+    const FONT_SMALL  = "\x1D\x21\x00";   // Karakter ukuran standar paling kecil & tajam
+    const BOLD_ON     = "\x1B\x45\x01";   // Tebal aktif
+    const BOLD_OFF    = "\x1B\x45\x00";   // Tebal mati
+    const C_CENTER    = "\x1B\x61\x01";   // Rata tengah
+    const C_LEFT      = "\x1B\x61\x00";   // Rata kiri
+    const LINE_SPACE  = "\x1B\x33\x1E";   // Mengatur jarak antar baris menjadi sangat rapat
+    const LINE        = "--------------------------------\n"; 
+    const BR          = "\n";
 
-    await printerCharacteristic.writeValue(encoder.encode(header + body));
+    // Generator Nomor Invoice Unik Otomatis
+    const noDoc = `TRX${new Date().toISOString().slice(2,10).replace(/-/g,'')}${Math.floor(100 + Math.random() * 900)}`;
+
+    // 1. HEADER UTAMA STRUK
+    let header = 
+      RESET + LINE_SPACE + FONT_SMALL + C_CENTER + BOLD_ON +
+      "KAS DIGITAL RW 02" + BR +
+      "JAMARAS ISTIMEWA" + BOLD_OFF + BR +
+      "Bukti Tanda Terima Resmi Warga" + BR +
+      LINE;
+
+    // 2. DATA TRANSAKSI (Titik dua disamakan posisinya menggunakan spasi manual agar lurus vertikal)
+    let body = 
+      C_LEFT +
+      `NO. DOC  : ${noDoc}\n` +
+      `TANGGAL  : ${data.tgl}\n` +
+      `JENIS    : UANG ${data.tipe.toUpperCase()}\n` +
+      LINE +
+      `KEPERLUAN: ${data.ket}\n` +
+      `PENYETOR : ${data.oleh}\n` + 
+      `PENERIMA : Admin Kas RW\n` +  
+      LINE;
+
+    // 3. NOMINAL TOTAL TRANSAKSI
+    let nominalSection = 
+      C_LEFT + BOLD_ON +
+      `TOTAL     Rp ${data.nominal}` + BOLD_OFF + BR +
+      LINE;
+
+    // 4. FOOTER & PENGESAHAN
+    let footer = 
+      C_CENTER + 
+      "Simpan struk ini sebagai" + BR +
+      "bukti pembayaran yang SAH." + BR +
+      "Terima kasih atas partisipasinya." + BR + BR +
+      "Diterima Oleh," + BR + BR + BR +
+      "(  Monev Kas RW 02  )" + BR + 
+      BR + BR + BR; // Ruang kosong akhir agar sobekan kertas tidak memotong teks utama
+
+    const strukSPBU = header + body + nominalSection + footer;
+    await printerCharacteristic.writeValue(encoder.encode(strukSPBU));
   };
 
   const handleSimpan = async () => {
@@ -145,7 +179,6 @@ export default function App() {
         input { width: 100%; padding: 14px 16px; margin: 10px 0; border-radius: 12px; border: 1px solid #334155; background: rgba(15, 23, 42, 0.6); color: #fff; box-sizing: border-box; font-size: 14px; transition: all 0.3s ease; }
         input:focus { border-color: #10b981; outline: none; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
         .btn-accent { background: linear-gradient(135deg, #10b981, #059669); color: #fff; padding: 14px; width: 100%; border: none; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; margin-top: 10px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
-        .btn-accent:block { transform: scale(0.98); }
       `}</style>
     </div>
   );
@@ -192,7 +225,7 @@ export default function App() {
                 <table>
                   <tbody>
                     {list.slice(0, 10).map(item => (
-                      <tr key={item.id} className="table-row-animate">
+                      <tr key={item.id}>
                         <td style={{color: '#94a3b8', fontWeight: '500', width: '55px'}}>
                           {new Date(item.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short'})}
                         </td>
@@ -300,69 +333,51 @@ export default function App() {
       </nav>
 
       <style>{`
-        /* Global & Reset Layout modern */
         body { margin: 0; background-color: #f8fafc; }
         .main-container { font-family: 'SF Pro Display', -apple-system, 'Segoe UI', sans-serif; background: #f1f5f9; color: #334155; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* Header Glassmorphic Putih Bersih */
         header { padding: 20px; display:flex; justify-content:space-between; align-items:center; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
         .btn-logout { background: #fee2e2; border: none; color: #ef4444; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
         
-        /* Bluetooth Button Badge */
         .bt-conn { font-size: 11px; padding: 8px 12px; border-radius: 20px; border: 1px solid #e2e8f0; background: white; color: #334155; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .bt-conn .dot { width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; }
         .bt-conn.active { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
         .bt-conn.active .dot { background: #22c55e; animation: pulse 1.5s infinite; }
-
         @keyframes pulse { 0% { transform: scale(0.9); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.5; } 100% { transform: scale(0.9); opacity: 1; } }
-
-        /* Container Content Utama */
-        .content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 120px; }
         
-        /* Card Utama Fintech Gradient Card (Wow factor) */
+        .content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 120px; }
         .card-summary { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 24px; padding: 25px; margin-bottom: 25px; box-shadow: 0 12px 24px rgba(15,23,42,0.15); color: white; position: relative; overflow: hidden; }
-        .card-summary::before { content: ''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(16, 185, 129, 0.1); border-radius: 50%; blur: 50px; }
         .total-saldo { font-size: 34px; font-weight: 800; color: #ffffff; margin: 8px 0 20px 0; letter-spacing: -0.5px; }
         .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .sub-card { background: rgba(255,255,255,0.06); padding: 12px 15px; border-radius: 16px; text-align: left; border: 1px solid rgba(255,255,255,0.04); }
         .sub-card .label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; font-weight: 500; }
         .sub-card .val { font-weight: 700; font-size: 15px; }
-
-        /* Section Tabel Riwayat (iOS Style Card) */
+        
         .riwayat-section { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 18px rgba(0,0,0,0.03); }
         table { width: 100%; border-collapse: collapse; }
         td { padding: 14px 8px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-        tr:last-child td { border-bottom: none; }
         
-        /* Form Input Section Premium */
         .page-input-container { background: white; padding: 25px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); }
         .badge-type { display: inline-block; padding: 6px 12px; border-radius: 30px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 20px; }
         .input-group { margin-bottom: 18px; }
         .input-group label { display: block; font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 600; padding-left: 2px; }
-        .page-input-container input { background: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b; font-size: 15px; padding: 12px 14px; border-radius: 12px; }
-        .page-input-container input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
-        .btn-accent-simpan { background: #1e293b; color: white; width: 100%; border: none; padding: 14px; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
-        .btn-accent-simpan:hover { background: #0f172a; }
+        .page-input-container input { width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b; font-size: 15px; padding: 12px 14px; border-radius: 12px; box-sizing: border-box; }
+        .btn-accent-simpan { background: #1e293b; color: white; width: 100%; border: none; padding: 14px; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px; }
         .btn-cancel { background: #f1f5f9; border: none; color: #64748b; width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
-
-        /* Report / Arsip Bulanan */
+        
         .report-container { background: white; padding: 20px; border-radius: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
-        .report-item { background: #f8fafc; padding: 16px; border-radius: 16px; border: 1px solid #e2e8f0; }
+        .report-item { background: #f8fafc; padding: 16px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 12px; }
         .report-month-title { font-weight: 700; color: #1e293b; font-size: 15px; margin-bottom: 10px; }
         .report-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .rep-box { display: flex; flex-direction: column; background: white; padding: 8px 12px; border-radius: 10px; border: 1px solid #f1f5f9; }
         .rep-lbl { font-size: 10px; color: #94a3b8; font-weight: 500; }
         .rep-val { font-size: 13px; font-weight: 700; margin-top: 2px; }
-
-        /* Bottom Nav Gaya Floating Dock (Sangat keren di Mobile Browser) */
+        
         .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; align-items: center; padding: 10px 5px; border-radius: 20px; box-shadow: 0 10px 25px rgba(15,23,42,0.3); box-sizing: border-box; }
-        .nav-item { color: #64748b; font-size: 10px; cursor: pointer; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.2s; width: 60px; }
+        .nav-item { color: #64748b; font-size: 10px; cursor: pointer; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 60px; }
         .nav-icon { font-size: 18px; }
         .nav-item.active { color: #34d399; font-weight: 600; }
-        
-        /* Tombol Bundar Aksi Cepat Kas Masuk/Keluar */
         .nav-item-pay { text-align: center; color: #94a3b8; font-size: 9px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .pay-circle { width: 32px; height: 32px; border-radius: 50%; color: white; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .pay-circle { width: 32px; height: 32px; border-radius: 50%; color: white; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
         .nav-item-pay.masuk .pay-circle { background: #10b981; }
         .nav-item-pay.keluar .pay-circle { background: #ef4444; }
       `}</style>
