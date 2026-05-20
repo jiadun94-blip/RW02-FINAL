@@ -54,62 +54,64 @@ export default function App() {
     } catch (e) { alert("Bluetooth Gagal!"); }
   };
 
+  // FUNGSI UTAMA CETAK GAYA SPBU (MENGGUNAKAN ANTRIAN BARIS AGAR TIDAK TERPOTONG)
   const sendToPrinter = async (data: any) => {
     if (!printerCharacteristic) return;
     const encoder = new TextEncoder();
     
-    // ================= PERINTAH ESC/POS PRINTER THERMAL (GAYA SPBU) =================
-    const RESET       = "\x1B\x40";       // Reset printer ke bawaan
-    const FONT_SMALL  = "\x1D\x21\x00";   // Karakter ukuran standar paling kecil & tajam
-    const BOLD_ON     = "\x1B\x45\x01";   // Tebal aktif
-    const BOLD_OFF    = "\x1B\x45\x00";   // Tebal mati
-    const C_CENTER    = "\x1B\x61\x01";   // Rata tengah
-    const C_LEFT      = "\x1B\x61\x00";   // Rata kiri
-    const LINE_SPACE  = "\x1B\x33\x1E";   // Mengatur jarak antar baris menjadi sangat rapat
+    // Perintah Utama Printer Thermal (ESC/POS)
+    const RESET       = "\x1B\x40";       
+    const FONT_SMALL  = "\x1D\x21\x00";   // Ukuran kecil rapat ala SPBU
+    const BOLD_ON     = "\x1B\x45\x01";   
+    const BOLD_OFF    = "\x1B\x45\x00";   
+    const C_CENTER    = "\x1B\x61\x01";   
+    const C_LEFT      = "\x1B\x61\x00";   
+    const LINE_SPACE  = "\x1B\x33\x1A";   // Merapatkan baris vertikal teks
     const LINE        = "--------------------------------\n"; 
     const BR          = "\n";
 
-    // Generator Nomor Invoice Unik Otomatis
     const noDoc = `TRX${new Date().toISOString().slice(2,10).replace(/-/g,'')}${Math.floor(100 + Math.random() * 900)}`;
 
-    // 1. HEADER UTAMA STRUK
-    let header = 
-      RESET + LINE_SPACE + FONT_SMALL + C_CENTER + BOLD_ON +
-      "KAS DIGITAL RW 02" + BR +
-      "JAMARAS ISTIMEWA" + BOLD_OFF + BR +
-      "Bukti Tanda Terima Resmi Warga" + BR +
-      LINE;
+    // Pecah data struk menjadi baris-baris kecil
+    const barisStruk = [
+      RESET,
+      LINE_SPACE,
+      FONT_SMALL,
+      C_CENTER,
+      BOLD_ON + "KAS DIGITAL RW 02" + BOLD_OFF + BR,
+      BOLD_ON + "JAMARAS ISTIMEWA" + BOLD_OFF + BR,
+      "Bukti Tanda Terima Resmi" + BR,
+      LINE,
+      C_LEFT,
+      `NO. DOC  : ${noDoc}\n`,
+      `TANGGAL  : ${data.tgl}\n`,
+      `JENIS    : UANG ${data.tipe.toUpperCase()}\n`,
+      LINE,
+      `KEPERLUAN: ${data.ket}\n`,
+      `PENYETOR : ${data.oleh}\n`,
+      `PENERIMA : ADMIN KAS RW\n`,
+      LINE,
+      BOLD_ON + `TOTAL     Rp ${data.nominal}` + BOLD_OFF + BR,
+      LINE,
+      C_CENTER,
+      "Simpan struk ini sebagai" + BR,
+      "bukti pembayaran yang SAH." + BR,
+      "Terima kasih." + BR,
+      BR,
+      "Diterima Oleh," + BR,
+      BR, BR, BR, 
+      "(  Monev Kas RW 02  )" + BR,
+      BR, BR, BR, BR 
+    ];
 
-    // 2. DATA TRANSAKSI (Titik dua disamakan posisinya menggunakan spasi manual agar lurus vertikal)
-    let body = 
-      C_LEFT +
-      `NO. DOC  : ${noDoc}\n` +
-      `TANGGAL  : ${data.tgl}\n` +
-      `JENIS    : UANG ${data.tipe.toUpperCase()}\n` +
-      LINE +
-      `KEPERLUAN: ${data.ket}\n` +
-      `PENYETOR : ${data.oleh}\n` + 
-      `PENERIMA : Admin Kas RW\n` +  
-      LINE;
+    // Fungsi delay internal
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-    // 3. NOMINAL TOTAL TRANSAKSI
-    let nominalSection = 
-      C_LEFT + BOLD_ON +
-      `TOTAL     Rp ${data.nominal}` + BOLD_OFF + BR +
-      LINE;
-
-    // 4. FOOTER & PENGESAHAN
-    let footer = 
-      C_CENTER + 
-      "Simpan struk ini sebagai" + BR +
-      "bukti pembayaran yang SAH." + BR +
-      "Terima kasih atas partisipasinya." + BR + BR +
-      "Diterima Oleh," + BR + BR + BR +
-      "(  Monev Kas RW 02  )" + BR + 
-      BR + BR + BR; // Ruang kosong akhir agar sobekan kertas tidak memotong teks utama
-
-    const strukSPBU = header + body + nominalSection + footer;
-    await printerCharacteristic.writeValue(encoder.encode(strukSPBU));
+    // Proses pengiriman beruntun bertahap (Mengatasi masalah memori printer macet)
+    for (const baris of barisStruk) {
+      await printerCharacteristic.writeValue(encoder.encode(baris));
+      await sleep(40); 
+    }
   };
 
   const handleSimpan = async () => {
@@ -211,7 +213,7 @@ export default function App() {
                 </div>
                 <div className="sub-card">
                   <div className="label">💸 Total Keluar</div>
-                  <div className="val" style={{color: '#f87171'}}>- {list.filter(i=>i.tipe==='keluar').reduce((a,b)=>a+b.nominal,0).toLocaleString('id-ID')}</div>
+                  <div className="val" style={{color: '#f87171'}}>- {list.filter(i=>i.keluar===0?'':i.tipe==='keluar').reduce((a,b)=>a+b.nominal,0).toLocaleString('id-ID')}</div>
                 </div>
               </div>
             </div>
@@ -263,8 +265,8 @@ export default function App() {
                   <input type="number" placeholder="0" value={amount} onChange={e=>setAmount(e.target.value)} />
                </div>
                <div className="input-group">
-                  <label>Petugas Penanggung Jawab</label>
-                  <input type="text" placeholder="Nama Pengurus" value={penerima} onChange={e=>setPenerima(e.target.value)} />
+                  <label>Nama Penyetor / Penanggung Jawab</label>
+                  <input type="text" placeholder="Nama Warga / Pengurus" value={penerima} onChange={e=>setPenerima(e.target.value)} />
                </div>
              </div>
              <button className="btn-accent-simpan" onClick={handleSimpan} disabled={loading}>
